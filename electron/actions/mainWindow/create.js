@@ -1,5 +1,7 @@
 import {
-  BrowserWindow
+  BaseWindow,
+  screen,
+  WebContentsView
 } from 'electron'
 import {
   windowIcon
@@ -20,6 +22,7 @@ import callQuit from '../app/callQuit.js'
 import setTrayMenu from '../tray/setMenu.js'
 import setTabsBounds from '../tabs/setBounds.js'
 import getTopTab from '../tab/getTop.js'
+import setMainViewBounds from '../mainView/setBounds.js'
 import changeViewBackgroundColor
   from '../view/changeBackgroundColor.js'
 
@@ -80,6 +83,8 @@ function handleClose (
 }
 
 function handleResize () {
+  setMainViewBounds()
+
   setTabsBounds()
 }
 
@@ -95,9 +100,11 @@ export default function () {
   const mainWindowWidth = 900
   const mainWindowHeight = 600
 
-  const options = {
+  const mainWindowOptions = {
     width: mainWindowWidth,
     height: mainWindowHeight,
+    minWidth: mainWindowWidth,
+    minHeight: mainWindowHeight,
     icon: windowIcon,
     show: false,
     webPreferences: {
@@ -108,31 +115,51 @@ export default function () {
   }
 
   mainWindow =
-    new BrowserWindow(
-      options
+    new BaseWindow(
+      mainWindowOptions
     )
+
+  mainWindow.removeMenu()
 
   changeViewBackgroundColor(
     mainWindow
   )
 
-  mainWindow.loadURL(
-    baseUrl
-  )
+  const mainViewOptions = {
+    webPreferences: {
+      contextIsolation: false,
+      devTools: isDevelopment,
+      nodeIntegration: true
+    }
+  }
 
-  mainWindow.setMinimumSize(
-    mainWindowWidth,
-    mainWindowHeight
-  )
+  mainView =
+    new WebContentsView(
+      mainViewOptions
+    )
 
-  mainWindow.removeMenu()
+  setMainViewBounds()
+
+  mainWindow
+    .contentView
+    .addChildView(
+      mainView
+    )
+
+  mainView
+    .webContents
+    .loadURL(
+      baseUrl
+    )
+
+  handleReadyToShow()
 
   if (isShowDevTools) {
     const devToolsData = {
       mode: 'detach'
     }
 
-    mainWindow
+    mainView
       .webContents
       .openDevTools(
         devToolsData
@@ -168,4 +195,10 @@ export default function () {
     'focus',
     handleFocus
   )
+
+  mainView
+    .webContents
+    .setWindowOpenHandler(
+      handleNewWindow
+    )
 }

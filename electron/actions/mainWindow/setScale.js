@@ -1,10 +1,9 @@
 export default function (
-  data
+  value
 ) {
   mainView
     .webContents
-    .send(
-      'update-tab',
-      data
+    .setZoomFactor(
+      value
     )
 }
